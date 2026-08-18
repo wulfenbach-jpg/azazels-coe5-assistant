@@ -1,0 +1,28 @@
+/target
+/.local
+/.cache
+
+# Local runtime state
+config.local.toml
+profiles.local/
+logs/
+dumps/
+evidence/
+
+# Signing material is never committed
+*.pfx
+*.p12
+*.cer
+*.key
+*.pem
+
+# Proprietary CoE5 material
+CoE5.exe
+*.coem
+saves/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

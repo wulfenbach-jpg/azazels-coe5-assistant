@@ -1,0 +1,15 @@
+[package]
+name = "azazel-coe5-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+azazel-coe5-symbols = { path = "../symbols" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+windows.workspace = true

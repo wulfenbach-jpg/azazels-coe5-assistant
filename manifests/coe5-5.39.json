@@ -1,0 +1,1125 @@
+{
+  "schema_version": 1,
+  "target": {
+    "product": "Conquest of Elysium 5",
+    "version": "5.39",
+    "architecture": "x86_64-pc-windows-msvc",
+    "sha256": "0b422183ca978551f104db865d1869eddfd4301ab160cd28c18a6783ec4ddf03",
+    "image_base": "0x140000000",
+    "file_size": 71161856,
+    "size_of_image": 303726592
+  },
+  "functions": [
+    {
+      "id": "rng_state_stack_push",
+      "rva": "0x50e40",
+      "size": 76,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 63 15 7d ae 5b 04 83 fa 04 7d 34 8b 05 ae 9a",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.rng_stack"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "rng_state_stack_pop",
+      "rva": "0x50ea0",
+      "size": 72,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "8b 15 1e ae 5b 04 85 d2 7e 3d ff ca 4c 8d 05 8d",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.rng_stack"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "game_main_loop_run_turns",
+      "rva": "0x83290",
+      "size": 5939,
+      "subsystem": "turn-lifecycle",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 20 55 57 41 55 41 56 41 57 48 8d ac",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.game_loop"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_choose_random_unique_class",
+      "rva": "0x85070",
+      "size": 1285,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "player_create_starting_army",
+      "rva": "0x88000",
+      "size": 1459,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 20 55 56 57 41 54 41 55 41 56 41 57",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "player_remove_all_units",
+      "rva": "0x8bee0",
+      "size": 107,
+      "subsystem": "units-commanders",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "40 56 48 83 ec 20 c7 05 dc e1 fc 00 ff ff ff ff",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_log_initial_stats",
+      "rva": "0x96830",
+      "size": 419,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 08 57 48 83 ec 40 33 db 8d 4b 05 e8",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "worldgen_generate_cell_features",
+      "rva": "0xa8b40",
+      "size": 5130,
+      "subsystem": "world-generation",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 18 55 56 57 41 54 41 55 41 56 41 57",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "game_over_detect_and_announce",
+      "rva": "0xecea0",
+      "size": 438,
+      "subsystem": "game-over-victory",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 18 56 48 83 ec 50 83 ce ff e8 fe fd",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.game_over"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "save_load_game",
+      "rva": "0x110ff0",
+      "size": 3418,
+      "subsystem": "save-load",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "40 53 57 41 55 b8 e0 17 00 00 e8 61 96 0c 00 48",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "save_read_mod_list",
+      "rva": "0x114ae0",
+      "size": 604,
+      "subsystem": "save-load",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "41 56 41 57 48 81 ec 38 04 00 00 48 8b 05 7e 24",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "app_sdl_main",
+      "rva": "0x115af0",
+      "size": 2740,
+      "subsystem": "startup-cli",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 08 48 89 74 24 18 48 89 7c 24 20 55",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "ui_main_menu_loop",
+      "rva": "0x11b6f0",
+      "size": 2686,
+      "subsystem": "ui-menu",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 8b c4 48 89 58 08 48 89 68 10 48 89 70 18 57",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "editor_map_loop",
+      "rva": "0x1326a0",
+      "size": 7624,
+      "subsystem": "map-editor",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 8b c4 48 89 58 08 48 89 70 10 48 89 78 18 55",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_set_participant_mode_flag",
+      "rva": "0x1548c0",
+      "size": 27,
+      "subsystem": "new-game",
+      "semantic_tier": "classified",
+      "confidence": "provisional",
+      "signature": {
+        "pattern": "8b 05 aa f5 d0 01 83 ca ff 85 c9 89 0d 4b a1 9f",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_random_map_settings",
+      "rva": "0x19ced0",
+      "size": 2646,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 18 55 56 41 54 41 55 41 57 48 8d ac",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "worldgen_create_random_map",
+      "rva": "0x19da20",
+      "size": 7075,
+      "subsystem": "world-generation",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 8b c4 55 53 56 57 41 54 41 55 41 56 41 57 48",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "world_reset_static_state",
+      "rva": "0x1c6d10",
+      "size": 1308,
+      "subsystem": "world-lifecycle",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 08 48 89 74 24 10 57 48 83 ec 20 48",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.world_reset"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_setup_participants_and_create_world",
+      "rva": "0x1c7610",
+      "size": 5963,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "40 53 55 57 41 56 41 57 48 81 ec f0 01 00 00 48",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "worldgen_create_dispatcher",
+      "rva": "0x1c8e30",
+      "size": 4729,
+      "subsystem": "world-generation",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "44 89 44 24 18 89 54 24 10 89 4c 24 08 55 53 56",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "world_validate_player_starts",
+      "rva": "0x1cad00",
+      "size": 509,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "40 55 56 57 41 54 41 57 48 83 ec 40 45 33 e4 48",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    },
+    {
+      "id": "newgame_apply_participant_defaults",
+      "rva": "0x1caf10",
+      "size": 281,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "signature": {
+        "pattern": "48 89 5c 24 08 48 89 74 24 10 48 89 7c 24 18 33",
+        "mask": "xxxxxxxxxxxxxxxx",
+        "section": ".text"
+      },
+      "capabilities": [
+        "memory.read",
+        "hook.participant_defaults"
+      ],
+      "invariants": [
+        "resolved address lies in .text",
+        "16-byte exact-build signature matches"
+      ]
+    }
+  ],
+  "globals": [
+    {
+      "id": "world_state_unknown_abc",
+      "rva": "0x1064abc",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "world-lifecycle",
+      "semantic_tier": "classified",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "game_turn",
+      "rva": "0x1064b64",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "turn-lifecycle",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "active_plane",
+      "rva": "0x1064b7c",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "world-lifecycle",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "north_percent_ui",
+      "rva": "0x1253de4",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "south_percent_ui",
+      "rva": "0x1253df4",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "start_policy_ui",
+      "rva": "0x1253e2c",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "loaded_mod_last_index",
+      "rva": "0x1257c0c",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "mods-workshop",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "rng_state_word_0",
+      "rva": "0x460a900",
+      "data_type": "u32",
+      "size": 4,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "rng_state_word_1",
+      "rva": "0x460bcb8",
+      "data_type": "u32",
+      "size": 4,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "rng_state_word_2",
+      "rva": "0x460bcbc",
+      "data_type": "u32",
+      "size": 4,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "rng_stack_depth",
+      "rva": "0x460bcc4",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "rng_state_stack",
+      "rva": "0x460c040",
+      "data_type": "u32_array",
+      "size": 48,
+      "subsystem": "rng",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "random_map_launch_mode",
+      "rva": "0x5211520",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "loaded_map_path",
+      "rva": "0x5211620",
+      "data_type": "u8_array",
+      "size": 2500,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "unique_random_classes",
+      "rva": "0x5213d88",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "map_width",
+      "rva": "0x5213fd4",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "world-generation",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "map_height",
+      "rva": "0x5213fd8",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "world-generation",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "map_real_width",
+      "rva": "0x5213fdc",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "world-generation",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "loaded_mod_names",
+      "rva": "0xd9838c0",
+      "data_type": "strided_char_array",
+      "size": null,
+      "subsystem": "mods-workshop",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "loaded_mod_enabled_flags",
+      "rva": "0xd984590",
+      "data_type": "strided_u8",
+      "size": null,
+      "subsystem": "mods-workshop",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_flags_a",
+      "rva": "0xe3ffa06",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_flags_b",
+      "rva": "0xe3ffa08",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "society_id",
+      "rva": "0xe3ffa0a",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_short_0c",
+      "rva": "0xe3ffa0c",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_short_0e",
+      "rva": "0xe3ffa0e",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_short_10",
+      "rva": "0xe3ffa10",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_14",
+      "rva": "0xe3ffa14",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "common_cause",
+      "rva": "0xe3ffa18",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "score_graphs",
+      "rva": "0xe3ffa1c",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_20",
+      "rva": "0xe3ffa20",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_24",
+      "rva": "0xe3ffa24",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_28",
+      "rva": "0xe3ffa28",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_2c",
+      "rva": "0xe3ffa2c",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "independent_strength",
+      "rva": "0xe3ffa30",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "options_int_34",
+      "rva": "0xe3ffa34",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "provisional",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "participant_classes",
+      "rva": "0xe408640",
+      "data_type": "i16_array",
+      "size": 64,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "participant_controllers",
+      "rva": "0xe408680",
+      "data_type": "i16_array",
+      "size": 64,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "participant_start_y",
+      "rva": "0xe4086c0",
+      "data_type": "i16_array",
+      "size": 64,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "participant_start_x",
+      "rva": "0xe408700",
+      "data_type": "i16_array",
+      "size": 64,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "battle_reports",
+      "rva": "0xe6a0840",
+      "data_type": "i16",
+      "size": 2,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "player_structures",
+      "rva": "0x109200e0",
+      "data_type": "opaque_array",
+      "size": 987264,
+      "subsystem": "new-game",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "player_team_field",
+      "rva": "0x10920110",
+      "data_type": "strided_i16",
+      "size": 740448,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "player_difficulty_field",
+      "rva": "0x10920112",
+      "data_type": "strided_i16",
+      "size": 740448,
+      "subsystem": "new-game",
+      "semantic_tier": "validated",
+      "confidence": "confirmed",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    },
+    {
+      "id": "mod_version_mismatch",
+      "rva": "0x521f1504",
+      "data_type": "i32",
+      "size": 4,
+      "subsystem": "save-load",
+      "semantic_tier": "typed",
+      "confidence": "high",
+      "capabilities": [
+        "memory.read"
+      ],
+      "invariants": [
+        "resolved range lies in committed readable image memory"
+      ]
+    }
+  ],
+  "disabled_capabilities": {
+    "internal.restart": "dynamic teardown, restore-order, RNG, and repeated-cycle invariants are incomplete"
+  }
+}
