@@ -68,6 +68,7 @@ struct Args {
     client: bool,
     direct_client: bool,
     raw_client: bool,
+    diag_window_seconds: u64,
 }
 
 fn main() -> Result<()> {
@@ -477,6 +478,16 @@ fn run(args: &Args) -> Result<()> {
         other => bail!("expected CapabilityReport response, received {other:?}"),
     }
 
+    // Diagnostic window: keep the session open so the operator can click the
+    // game while the UI dispatcher's return values are logged.
+    if args.diag_window_seconds > 0 {
+        eprintln!(
+            "DIAG: holding session for {}s; click the game window now",
+            args.diag_window_seconds
+        );
+        std::thread::sleep(std::time::Duration::from_secs(args.diag_window_seconds));
+    }
+
     let pong = round_trip(&server_pipe, Message::Ping { nonce: 0x51E5 })?;
     match pong {
         Message::Pong { nonce } if nonce == 0x51E5 => {
@@ -550,6 +561,7 @@ fn parse_args() -> Result<Args> {
     let mut client = false;
     let mut direct_client = false;
     let mut raw_client = false;
+    let mut diag_window_seconds = 0u64;
     let mut dll = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../target/debug/azazel_coe5_injected.dll");
     let mut arguments = std::env::args().skip(1);
@@ -567,6 +579,13 @@ fn parse_args() -> Result<Args> {
             "--client" => client = true,
             "--direct-client" => direct_client = true,
             "--raw-client" => raw_client = true,
+            "--diag-seconds" => {
+                diag_window_seconds = arguments
+                    .next()
+                    .context("--diag-seconds requires a value")?
+                    .parse()
+                    .context("--diag-seconds must be numeric")?;
+            }
             other => bail!("unknown argument {other}"),
         }
     }
@@ -578,6 +597,7 @@ fn parse_args() -> Result<Args> {
         client,
         direct_client,
         raw_client,
+        diag_window_seconds,
     })
 }
 
