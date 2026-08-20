@@ -192,6 +192,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "azazel-coe5-update-signer"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "ed25519-dalek",
+ "semver",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

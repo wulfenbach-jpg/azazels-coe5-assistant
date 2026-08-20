@@ -5,6 +5,7 @@ members = [
     "crates/injected",
     "crates/protocol",
     "crates/symbols",
+    "tools/update-signer",
 ]
 resolver = "3"
 

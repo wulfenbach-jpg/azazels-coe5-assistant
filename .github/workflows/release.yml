@@ -1,0 +1,82 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: x86_64-pc-windows-msvc
+          components: clippy
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build release
+        run: cargo build --release -p azazel-coe5-assistant -p azazel-coe5-injected
+
+      - name: Stage portable package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path stage | Out-Null
+          Copy-Item target/release/azazel-coe5-assistant.exe stage/
+          Copy-Item target/release/azazel_coe5_injected.dll stage/
+          Copy-Item README.md stage/
+          Copy-Item docs/user-guide.md stage/USER_GUIDE.md
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          $name = "azazel-coe5-assistant-$env:GITHUB_REF_NAME-windows-portable.zip"
+          Compress-Archive -Path stage/* -DestinationPath $name
+          $hash = (Get-FileHash $name -Algorithm SHA256).Hash.ToLower()
+          Set-Content -Path "azazel-coe5-assistant-$env:GITHUB_REF_NAME.sha256" -Value $hash
+
+      - name: Build update signer
+        run: cargo build --release -p azazel-coe5-update-signer
+
+      - name: Sign update manifest
+        if: ${{ secrets.UPDATE_SIGNING_KEY != '' }}
+        shell: pwsh
+        run: |
+          $zip = "azazel-coe5-assistant-$env:GITHUB_REF_NAME-windows-portable.zip"
+          $json = [ordered]@{
+            version = $env:GITHUB_REF_NAME.TrimStart('v')
+            release_notes_url = "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$env:GITHUB_REF_NAME"
+            artifacts = @([ordered]@{
+              target = "x86_64-pc-windows-msvc"
+              kind = "portable_zip"
+              url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:GITHUB_REF_NAME/$zip"
+              size = (Get-Item $zip).Length
+              sha256 = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+            })
+          }
+          $json | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 unsigned.json
+          & .\target\release\azazel-coe5-update-signer.exe `
+            "${{ secrets.UPDATE_SIGNING_KEY }}" unsigned.json update.json
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            azazel-coe5-assistant-${{ github.ref_name }}-windows-portable.zip
+            azazel-coe5-assistant-${{ github.ref_name }}.sha256
+            update.json
+          fail_on_unmatched_files: false
