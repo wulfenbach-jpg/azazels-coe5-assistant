@@ -500,7 +500,11 @@ impl AssistantTabs<'_> {
             SettingsSource::UseProfile,
             "Use set profile settings",
         );
-        if (copy_live.changed() || use_profile.changed())
+        let launch_steam = ui.checkbox(
+            &mut self.config.launch_via_steam,
+            "Launch restarts through Steam",
+        );
+        if (copy_live.changed() || use_profile.changed() || launch_steam.changed())
             && let Err(error) = self.config.save()
         {
             *self.last_error = Some(error.to_string());

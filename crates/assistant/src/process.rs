@@ -194,6 +194,53 @@ pub fn launch_coe5(executable: &Path, arguments: &[String]) -> Result<Child> {
         .with_context(|| format!("launch {}", executable.display()))
 }
 
+/// CoE5's Steam application id (from appmanifest_1606340.acf).
+pub const STEAM_APP_ID: &str = "1606340";
+
+/// Launches CoE5 through the Steam client (`steam://run/<appid>//<args>`)
+/// so the overlay, achievements, and playtime tracking engage. Steam spawns
+/// the game itself, so the child pid is not ours; callers must wait for a
+/// fresh process with [`wait_for_coe5_different`].
+pub fn launch_coe5_via_steam(arguments: &[String]) -> Result<()> {
+    use windows::Win32::UI::Shell::ShellExecuteW;
+
+    let mut url = format!("steam://run/{STEAM_APP_ID}//");
+    url.push_str(&arguments.join(" "));
+    let wide = url.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            None,
+            PCWSTR(wide.as_ptr()),
+            None,
+            None,
+            windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL,
+        )
+    };
+    if result.0 as isize <= 32 {
+        bail!(
+            "ShellExecuteW steam:// returned error code {}",
+            result.0 as isize
+        );
+    }
+    Ok(())
+}
+
+/// Waits for a CoE5 process that is not `previous_pid`, used after a Steam
+/// launch where the game is spawned by the client rather than by us.
+pub fn wait_for_coe5_different(previous_pid: u32, timeout: Duration) -> Result<ProcessInfo> {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if let Some(info) = find_coe5()?
+            && info.pid != previous_pid
+        {
+            return Ok(info);
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    bail!("timed out waiting for a fresh CoE5 process after Steam launch")
+}
+
 pub fn stop_coe5(pid: u32, graceful_timeout: Duration) -> Result<bool> {
     let handle =
         OwnedHandle(unsafe { OpenProcess(PROCESS_SYNCHRONIZE | PROCESS_TERMINATE, false, pid) }?);

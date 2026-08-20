@@ -274,12 +274,13 @@ impl RuntimeController {
             .cloned()
             .context("no active restart profile")?;
         let snapshot = self.snapshot.read().clone();
-        let plan = match config.restart_settings_source {
+        let mut plan = match config.restart_settings_source {
             SettingsSource::CopyLastGame => {
                 RestartPlan::capture(&process, snapshot.as_ref(), &profile)
             }
             SettingsSource::UseProfile => RestartPlan::from_profile(&profile),
         };
+        plan.launch_via_steam = config.launch_via_steam;
         let executable = config.coe5_executable.clone();
         if let Some(ipc) = &self.ipc {
             ipc.shutdown();

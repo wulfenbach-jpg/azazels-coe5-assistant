@@ -33,7 +33,10 @@ use windows::core::{PCWSTR, w};
 
 use crate::{
     config::{Profile, StartPolicy},
-    process::{OwnedHandle, ProcessInfo, command_line, launch_coe5, stop_coe5, wait_for_coe5},
+    process::{
+        OwnedHandle, ProcessInfo, command_line, launch_coe5, launch_coe5_via_steam, stop_coe5,
+        wait_for_coe5, wait_for_coe5_different,
+    },
 };
 
 const SUPPORTED_SHA256: &str = "0b422183ca978551f104db865d1869eddfd4301ab160cd28c18a6783ec4ddf03";
@@ -109,6 +112,7 @@ pub struct RestartPlan {
     pub participant_count: usize,
     pub map_from_live: bool,
     pub roster_from_live: bool,
+    pub launch_via_steam: bool,
 }
 
 impl RestartPlan {
@@ -157,7 +161,7 @@ impl RestartPlan {
                 _ => -1,
             };
             if slot < 24 {
-                teams[slot] = if active { 100 + slot as i16 } else { 0 };
+                teams[slot] = 0;
                 difficulties[slot] = profile.ai_difficulty;
             }
         }
@@ -171,6 +175,7 @@ impl RestartPlan {
             participant_count: count,
             map_from_live: false,
             roster_from_live: false,
+            launch_via_steam: false,
         }
     }
 }
@@ -329,8 +334,13 @@ pub fn execute_external(
     plan: &RestartPlan,
 ) -> Result<ExternalRestartResult> {
     let forced_termination = stop_coe5(current.pid, Duration::from_secs(4))?;
-    let child = launch_coe5(executable, &plan.arguments)?;
-    let process = wait_for_coe5(child.id(), Duration::from_secs(20))?;
+    let process = if plan.launch_via_steam {
+        launch_coe5_via_steam(&plan.arguments)?;
+        wait_for_coe5_different(current.pid, Duration::from_secs(30))?
+    } else {
+        let child = launch_coe5(executable, &plan.arguments)?;
+        wait_for_coe5(child.id(), Duration::from_secs(20))?
+    };
     if !process.sha256.eq_ignore_ascii_case(SUPPORTED_SHA256) {
         bail!(
             "external setup refuses unsupported CoE5 hash {}",
@@ -842,9 +852,11 @@ mod tests {
         assert_eq!(plan.controllers[1], 1);
         assert_eq!(plan.controllers[3], -1);
         assert_eq!(plan.classes[0], 7);
-        assert_eq!(plan.teams[2], 102);
+        assert_eq!(plan.teams[0], 0, "teams default to none");
+        assert_eq!(plan.teams[2], 0, "teams default to none");
         assert_eq!(plan.difficulties[1], 4);
         assert!(!plan.roster_from_live);
         assert!(!plan.map_from_live);
+        assert!(!plan.launch_via_steam);
     }
 }

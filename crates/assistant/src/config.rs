@@ -30,6 +30,8 @@ pub struct AppConfig {
     pub restart_double_tap_ms: u64,
     #[serde(default)]
     pub restart_settings_source: SettingsSource,
+    #[serde(default)]
+    pub launch_via_steam: bool,
     pub profiles: Vec<Profile>,
     pub remaps: Vec<RemapRule>,
     pub update: UpdateConfig,
@@ -50,6 +52,7 @@ impl Default for AppConfig {
             },
             restart_double_tap_ms: 1200,
             restart_settings_source: SettingsSource::default(),
+            launch_via_steam: false,
             profiles: vec![Profile::default()],
             remaps: Vec::new(),
             update: UpdateConfig::default(),
