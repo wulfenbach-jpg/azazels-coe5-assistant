@@ -15,7 +15,7 @@ use crossbeam_channel::{Receiver, Sender, unbounded};
 use parking_lot::RwLock;
 
 use crate::{
-    config::{AppConfig, ProfileDifference},
+    config::{AppConfig, ProfileDifference, SettingsSource},
     input::InputRemapper,
     ipc::{IpcEvent, IpcServer},
     process::{ProcessInfo, find_coe5, inject, is_alive},
@@ -274,7 +274,12 @@ impl RuntimeController {
             .cloned()
             .context("no active restart profile")?;
         let snapshot = self.snapshot.read().clone();
-        let plan = RestartPlan::capture(&process, snapshot.as_ref(), &profile);
+        let plan = match config.restart_settings_source {
+            SettingsSource::CopyLastGame => {
+                RestartPlan::capture(&process, snapshot.as_ref(), &profile)
+            }
+            SettingsSource::UseProfile => RestartPlan::from_profile(&profile),
+        };
         let executable = config.coe5_executable.clone();
         if let Some(ipc) = &self.ipc {
             ipc.shutdown();

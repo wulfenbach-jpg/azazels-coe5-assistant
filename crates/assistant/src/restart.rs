@@ -9,7 +9,7 @@ use anyhow::{Result, bail};
 use azazel_coe5_protocol::GameSnapshot;
 use windows::Win32::{
     Foundation::{POINT, RECT},
-    Graphics::Gdi::ClientToScreen,
+    Graphics::Gdi::{ClientToScreen, InvalidateRect},
     System::{
         Diagnostics::Debug::WriteProcessMemory,
         Threading::{
@@ -137,7 +137,7 @@ impl RestartPlan {
         plan
     }
 
-    fn from_profile(profile: &Profile) -> Self {
+    pub fn from_profile(profile: &Profile) -> Self {
         let mut controllers = [-1i16; 32];
         let mut classes = [-1i16; 32];
         let mut teams = [0i16; 24];
@@ -185,7 +185,10 @@ struct Roster {
 
 /// Translates a live [`GameSnapshot`] into the roster arrays the setup screen
 /// expects. The participant table is dense: the active slots form a leading
-/// run, and everything past it is written inactive.
+/// run, and everything past it is written inactive. The human's class is
+/// preserved; AI (controller 1) slots are reset to `-1` so the game rolls
+/// their classes fresh on world creation instead of carrying the resolved
+/// classes of the restarted game.
 fn roster_from_snapshot(snapshot: Option<&GameSnapshot>) -> Option<Roster> {
     let snapshot = snapshot?;
     let count = snapshot
@@ -204,7 +207,11 @@ fn roster_from_snapshot(snapshot: Option<&GameSnapshot>) -> Option<Roster> {
     for participant in snapshot.participants.iter().take(count) {
         let slot = participant.slot as usize;
         controllers[slot] = participant.controller;
-        classes[slot] = participant.class_id;
+        classes[slot] = if participant.controller == 0 {
+            participant.class_id
+        } else {
+            -1
+        };
         if let Some(team) = participant.team {
             teams[slot] = team;
         }
@@ -441,6 +448,22 @@ fn apply_participant_setup(process: &ProcessInfo, plan: &RestartPlan) -> Result<
         process.module_base + UNIQUE_RANDOM_CLASSES,
         &plan.unique_random,
     )?;
+    invalidate_game_window(process)?;
+    Ok(())
+}
+
+/// Forces the game window to repaint after the participant table was written
+/// into memory. The setup screen is event-driven and draws only when the
+/// game decides to; the roster would otherwise stay invisible until some
+/// window event (like a maximize/restore) happens to trigger a redraw.
+fn invalidate_game_window(process: &ProcessInfo) -> Result<()> {
+    let window = unsafe { FindWindowW(PCWSTR::null(), w!("CoE 5")) }?;
+    let mut pid = 0u32;
+    unsafe { GetWindowThreadProcessId(window, Some(&mut pid)) };
+    if pid != process.pid {
+        return Ok(());
+    }
+    unsafe { InvalidateRect(Some(window), None, true) }.ok()?;
     Ok(())
 }
 
@@ -746,7 +769,9 @@ mod tests {
         assert_eq!(roster.controllers[1], 1);
         assert_eq!(roster.controllers[3], 1);
         assert_eq!(roster.controllers[4], -1);
-        assert_eq!(roster.classes[0], 2);
+        assert_eq!(roster.classes[0], 2, "human class is preserved");
+        assert_eq!(roster.classes[1], -1, "AI classes reset to random");
+        assert_eq!(roster.classes[3], -1, "AI classes reset to random");
         assert_eq!(roster.teams[2], 102);
         assert_eq!(roster.difficulties[1], 2);
     }

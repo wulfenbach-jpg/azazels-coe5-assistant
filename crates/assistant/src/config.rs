@@ -8,6 +8,18 @@ use uuid::Uuid;
 
 pub const CONFIG_VERSION: u32 = 1;
 
+/// Where the restart draws its settings from.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SettingsSource {
+    /// Copy the running game's own settings (map/rule arguments from its
+    /// command line, participant roster from the live snapshot).
+    #[default]
+    CopyLastGame,
+    /// Use the active profile's configured settings.
+    UseProfile,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub version: u32,
@@ -16,6 +28,8 @@ pub struct AppConfig {
     pub profile_lock: bool,
     pub restart_hotkey: HotkeyBinding,
     pub restart_double_tap_ms: u64,
+    #[serde(default)]
+    pub restart_settings_source: SettingsSource,
     pub profiles: Vec<Profile>,
     pub remaps: Vec<RemapRule>,
     pub update: UpdateConfig,
@@ -35,6 +49,7 @@ impl Default for AppConfig {
                 code: "KeyR".into(),
             },
             restart_double_tap_ms: 1200,
+            restart_settings_source: SettingsSource::default(),
             profiles: vec![Profile::default()],
             remaps: Vec::new(),
             update: UpdateConfig::default(),

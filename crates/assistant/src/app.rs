@@ -25,7 +25,10 @@ static SCREENSHOT_REQUESTED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
 use crate::{
-    config::{AppConfig, InputAction, InputTrigger, Modifier, MouseButton, Profile, RemapRule},
+    config::{
+        AppConfig, InputAction, InputTrigger, Modifier, MouseButton, Profile, RemapRule,
+        SettingsSource,
+    },
     debugger::{DebuggerCommand, DebuggerEvent, DebuggerSession, DisassemblyLine},
     lua::LuaEngine,
     plugins::PluginHost,
@@ -468,8 +471,20 @@ impl AssistantTabs<'_> {
         });
         if let Some(result) = &self.runtime.restart_result {
             ui.monospace(format!(
-                "restart pid={} forced={} setup={}",
-                result.pid, result.forced_termination, result.participant_setup_applied
+                "restart pid={} forced={} setup={} map={} roster={}",
+                result.pid,
+                result.forced_termination,
+                result.participant_setup_applied,
+                if result.live_map_settings {
+                    "live"
+                } else {
+                    "profile"
+                },
+                if result.live_roster {
+                    "live"
+                } else {
+                    "profile"
+                },
             ));
         }
         for difference in self.runtime.profile_differences(self.config) {
@@ -521,7 +536,13 @@ impl AssistantTabs<'_> {
                 ui.text_edit_singleline(&mut profile.name);
                 ui.end_row();
                 ui.label("Class");
-                ui.add(egui::DragValue::new(&mut profile.human_class_id));
+                egui::ComboBox::from_id_salt("profile-class")
+                    .selected_text(crate::classes::class_name(profile.human_class_id))
+                    .show_ui(ui, |ui| {
+                        for (id, name) in crate::classes::CLASS_NAMES.iter().enumerate() {
+                            ui.selectable_value(&mut profile.human_class_id, id as i16, *name);
+                        }
+                    });
                 ui.end_row();
                 ui.label("Players");
                 ui.add(egui::DragValue::new(&mut profile.participant_count).range(2..=24));
@@ -573,6 +594,24 @@ impl AssistantTabs<'_> {
                 *self.rebind_hotkey = true;
             }
         });
+        ui.separator();
+        ui.label("Restart settings source");
+        let source = &mut self.config.restart_settings_source;
+        let copy_live = ui.selectable_value(
+            source,
+            SettingsSource::CopyLastGame,
+            "Copy last played game settings",
+        );
+        let use_profile = ui.selectable_value(
+            source,
+            SettingsSource::UseProfile,
+            "Use set profile settings",
+        );
+        if (copy_live.changed() || use_profile.changed())
+            && let Err(error) = self.config.save()
+        {
+            *self.last_error = Some(error.to_string());
+        }
         ui.separator();
         let mut remove = None;
         for (index, rule) in self.config.remaps.iter_mut().enumerate() {
@@ -690,14 +729,15 @@ impl AssistantTabs<'_> {
         ScrollArea::vertical().show(ui, |ui| {
             for participant in &snapshot.participants {
                 ui.monospace(format!(
-                    "{:02}  ctl={:>3}  class={:>3}  start=({:>3},{:>3})  team={:?}  diff={:?}",
+                    "{:02}  ctl={:>3}  class={:>3} {:<16}  start=({:>3},{:>3})  team={:?}  diff={:?}",
                     participant.slot,
                     participant.controller,
                     participant.class_id,
+                    crate::classes::class_name(participant.class_id),
                     participant.start_x,
                     participant.start_y,
                     participant.team,
-                    participant.difficulty
+                    participant.difficulty,
                 ));
             }
         });
