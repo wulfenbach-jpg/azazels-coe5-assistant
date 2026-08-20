@@ -2,6 +2,8 @@
 
 Windows companion for **Conquest of Elysium 5**. The Assistant combines a tray-resident external process with a version-gated injected module.
 
+**[User guide](docs/user-guide.md)** — how to run the Assistant, restart your game with the double-tap hotkey, manage profiles, and read the diagnostics tabs.
+
 ## Capabilities
 
 - detects or launches CoE5 and verifies the executable fingerprint;

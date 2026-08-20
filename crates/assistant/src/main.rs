@@ -4,6 +4,7 @@ mod app;
 mod classes;
 mod config;
 mod debugger;
+mod icons;
 mod input;
 mod ipc;
 mod lua;
@@ -38,6 +39,9 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Azazel's CoE5 Assistant",
         options,
-        Box::new(|context| Ok(Box::new(AssistantApp::new(context)?))),
+        Box::new(|context| {
+            icons::install(&context.egui_ctx);
+            Ok(Box::new(AssistantApp::new(context)?))
+        }),
     )
 }

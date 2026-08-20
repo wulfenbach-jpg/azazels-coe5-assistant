@@ -68,6 +68,22 @@ impl Tab {
             Self::Updates => "Updates",
         }
     }
+
+    fn icon(self) -> &'static str {
+        match self {
+            Self::Status => crate::icons::STATUS_CHECK,
+            Self::Profiles => crate::icons::CONTACT,
+            Self::Hotkeys => crate::icons::KEYBOARD,
+            Self::Memory => crate::icons::DIAGNOSTIC,
+            Self::Symbols => crate::icons::CODE,
+            Self::Hooks => crate::icons::REPAIR,
+            Self::Debugger => crate::icons::COMMAND_PROMPT,
+            Self::Lua => crate::icons::PLAY,
+            Self::Plugins => crate::icons::PUZZLE,
+            Self::Logs => crate::icons::DOCUMENT,
+            Self::Updates => crate::icons::DOWNLOAD,
+        }
+    }
 }
 
 struct DebugUi {
@@ -367,7 +383,7 @@ impl TabViewer for AssistantTabs<'_> {
     }
 
     fn title(&mut self, tab: &mut Self::Tab) -> egui::WidgetText {
-        tab.label().into()
+        format!("{} {}", tab.icon(), tab.label()).into()
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
@@ -440,12 +456,16 @@ impl AssistantTabs<'_> {
         });
         ui.separator();
         ui.horizontal(|ui| {
-            if ui.button("Retry injection").clicked()
+            if ui
+                .button(format!("{} Retry injection", crate::icons::REFRESH))
+                .clicked()
                 && let Err(error) = self.runtime.retry_injection()
             {
                 *self.last_error = Some(error.to_string());
             }
-            if ui.button("Snapshot").clicked()
+            if ui
+                .button(format!("{} Snapshot", crate::icons::CAMERA))
+                .clicked()
                 && let Err(error) = self.runtime.request_snapshot()
             {
                 *self.last_error = Some(error.to_string());
@@ -457,11 +477,12 @@ impl AssistantTabs<'_> {
             };
             if ui
                 .add(
-                    egui::Button::new(restart_label).fill(if self.runtime.restart_armed() {
-                        theme::CINNABAR
-                    } else {
-                        theme::RAISED_IRON
-                    }),
+                    egui::Button::new(format!("{} {}", crate::icons::REPLAY, restart_label))
+                        .fill(if self.runtime.restart_armed() {
+                            theme::CINNABAR
+                        } else {
+                            theme::RAISED_IRON
+                        }),
                 )
                 .clicked()
                 && let Err(error) = self.runtime.restart_press(self.config)
@@ -471,7 +492,8 @@ impl AssistantTabs<'_> {
         });
         if let Some(result) = &self.runtime.restart_result {
             ui.monospace(format!(
-                "restart pid={} forced={} setup={} map={} roster={}",
+                "{} restart pid={} forced={} setup={} map={} roster={}",
+                crate::icons::CHECK_MARK,
                 result.pid,
                 result.forced_termination,
                 result.participant_setup_applied,
@@ -512,7 +534,8 @@ impl AssistantTabs<'_> {
         for difference in self.runtime.profile_differences(self.config) {
             ui.horizontal(|ui| {
                 ui.colored_label(theme::BRASS, difference.field);
-                ui.monospace(difference.profile);                ui.label("→");
+                ui.monospace(difference.profile);
+                ui.label(crate::icons::CHEVRON_RIGHT);
                 ui.monospace(difference.live);
             });
         }
@@ -526,7 +549,12 @@ impl AssistantTabs<'_> {
                 if ui.selectable_label(selected, &profile.name).clicked() {
                     self.config.active_profile = Some(profile.id);
                 }
-                if self.config.profiles.len() > 1 && ui.small_button("×").on_hover_text("Delete profile").clicked() {
+                if self.config.profiles.len() > 1
+                    && ui
+                        .small_button(crate::icons::DELETE)
+                        .on_hover_text("Delete profile")
+                        .clicked()
+                {
                     delete = Some(index);
                 }
             }
@@ -662,9 +690,13 @@ impl AssistantTabs<'_> {
                             });
                     }
                 }
-                ui.label("→");
+                ui.label(crate::icons::CHEVRON_RIGHT);
                 ui.add(egui::DragValue::new(&mut rule.action.virtual_key));
-                if ui.button("×").clicked() {
+                if ui
+                    .small_button(crate::icons::DELETE)
+                    .on_hover_text("Remove remap")
+                    .clicked()
+                {
                     remove = Some(index);
                 }
             });
@@ -1007,25 +1039,26 @@ fn spine(ui: &mut egui::Ui, state: &ConnectionState, pid: Option<u32>) {
         ui.label(RichText::new("COE5").size(12.0).color(theme::DIM_BONE));
         ui.add_space(12.0);
         let stages = [
-            ("PROC", pid.is_some()),
-            ("HASH", pid.is_some()),
+            ("PROC", crate::icons::GAME, pid.is_some()),
+            ("HASH", crate::icons::SHIELD, pid.is_some()),
             (
                 "PIPE",
+                crate::icons::LINK,
                 matches!(
                     state,
                     ConnectionState::Connecting | ConnectionState::Injected
                 ),
             ),
-            ("HOOK", matches!(state, ConnectionState::Injected)),
+            ("HOOK", crate::icons::REPAIR, matches!(state, ConnectionState::Injected)),
         ];
-        for (label, active) in stages {
+        for (label, icon, active) in stages {
             let degraded = matches!(state, ConnectionState::Degraded(_));
             let color = if label == "PIPE" && active && !degraded {
                 theme::LAPIS
             } else {
                 theme::state_color(active, degraded)
             };
-            ui.colored_label(color, "◆");
+            ui.colored_label(color, icon);
             ui.monospace(label);
             ui.add_space(8.0);
         }
@@ -1109,7 +1142,7 @@ fn connection_label(state: &ConnectionState) -> String {
         ConnectionState::NoGame => "NO GAME".into(),
         ConnectionState::Connecting => "CONNECTING".into(),
         ConnectionState::Injected => "INJECTED".into(),
-        ConnectionState::Degraded(reason) => format!("DEGRADED · {reason}"),
+        ConnectionState::Degraded(reason) => format!("{} DEGRADED · {reason}", crate::icons::ERROR),
         ConnectionState::Restarting => "RESTARTING".into(),
     }
 }
