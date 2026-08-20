@@ -19,7 +19,7 @@ use crate::{
     input::InputRemapper,
     ipc::{IpcEvent, IpcServer},
     process::{ProcessInfo, find_coe5, inject, is_alive},
-    restart::{ExternalRestartResult, RestartGuard, RestartPress, execute_external},
+    restart::{ExternalRestartResult, RestartGuard, RestartPlan, RestartPress, execute_external},
 };
 
 const SNAPSHOT_INTERVAL: Duration = Duration::from_secs(1);
@@ -273,6 +273,8 @@ impl RuntimeController {
             .active_profile()
             .cloned()
             .context("no active restart profile")?;
+        let snapshot = self.snapshot.read().clone();
+        let plan = RestartPlan::capture(&process, snapshot.as_ref(), &profile);
         let executable = config.coe5_executable.clone();
         if let Some(ipc) = &self.ipc {
             ipc.shutdown();
@@ -282,7 +284,7 @@ impl RuntimeController {
         thread::Builder::new()
             .name("azazel-coe5-external-restart".into())
             .spawn(move || {
-                let result = execute_external(&process, &executable, &profile)
+                let result = execute_external(&process, &executable, &plan)
                     .map_err(|error| format!("{error:#}"));
                 let _ = result_tx.send(result);
             })
@@ -297,7 +299,20 @@ impl RuntimeController {
                     self.log(
                         DiagnosticLevel::Info,
                         "restart",
-                        format!("external restart created process {}", result.pid),
+                        format!(
+                            "external restart created process {} ({} map settings, {} participant roster)",
+                            result.pid,
+                            if result.live_map_settings {
+                                "live"
+                            } else {
+                                "profile"
+                            },
+                            if result.live_roster {
+                                "live"
+                            } else {
+                                "profile"
+                            },
+                        ),
                     );
                     self.restart_result = Some(result);
                     self.process = None;

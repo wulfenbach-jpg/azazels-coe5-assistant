@@ -116,12 +116,6 @@ impl RuntimeState {
             .map(|address| address as *mut c_void)
     }
 
-    /// Resolve a raw RVA inside the image without manifest validation.
-    pub fn address_of_rva(&self, rva: u64) -> Result<*mut c_void> {
-        self.checked_address(Rva(rva), 1)
-            .map(|address| address as *mut c_void)
-    }
-
     pub fn read_bytes(&self, rva: Rva, length: usize) -> Result<Vec<u8>> {
         if length > MAX_MEMORY_READ {
             bail!("memory read length {length} exceeds {MAX_MEMORY_READ}");

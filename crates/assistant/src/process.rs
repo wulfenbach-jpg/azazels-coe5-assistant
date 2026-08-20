@@ -16,7 +16,7 @@ use windows::{
         Foundation::{CloseHandle, HANDLE, LPARAM, WAIT_OBJECT_0, WAIT_TIMEOUT, WPARAM},
         System::{
             Diagnostics::{
-                Debug::WriteProcessMemory,
+                Debug::{ReadProcessMemory, WriteProcessMemory},
                 ToolHelp::{
                     CreateToolhelp32Snapshot, MODULEENTRY32W, Module32FirstW, Module32NextW,
                     PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPMODULE,
@@ -28,10 +28,10 @@ use windows::{
                 MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, VirtualAllocEx, VirtualFreeEx,
             },
             Threading::{
-                CreateRemoteThread, GetExitCodeThread, OpenProcess, PROCESS_CREATE_THREAD,
-                PROCESS_QUERY_INFORMATION, PROCESS_SYNCHRONIZE, PROCESS_TERMINATE,
-                PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE, TerminateProcess,
-                WaitForSingleObject,
+                CreateRemoteThread, GetExitCodeThread, OpenProcess, PEB, PROCESS_BASIC_INFORMATION,
+                PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_SYNCHRONIZE,
+                PROCESS_TERMINATE, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
+                RTL_USER_PROCESS_PARAMETERS, TerminateProcess, WaitForSingleObject,
             },
         },
         UI::WindowsAndMessaging::{FindWindowW, GetWindowThreadProcessId, PostMessageW, WM_CLOSE},
@@ -93,8 +93,83 @@ pub fn is_alive(pid: u32) -> bool {
     let Ok(handle) = (unsafe { OpenProcess(PROCESS_SYNCHRONIZE, false, pid) }) else {
         return false;
     };
-    let handle = OwnedHandle(handle);
+    let handle = OwnedHandle::new(handle);
     (unsafe { WaitForSingleObject(handle.raw(), 0) }) == WAIT_TIMEOUT
+}
+
+/// Reads a process's command line through its PEB. The typed layout of
+/// [`PROCESS_BASIC_INFORMATION`], [`PEB`], and
+/// [`RTL_USER_PROCESS_PARAMETERS`] mirrors the x64 structures, so the
+/// `CommandLine` UNICODE_STRING is located without hardcoded offsets.
+pub fn command_line(pid: u32) -> Result<String> {
+    use windows::Wdk::System::Threading::{NtQueryInformationProcess, ProcessBasicInformation};
+
+    let handle = OwnedHandle::new(unsafe {
+        OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)?
+    });
+    let mut basic = PROCESS_BASIC_INFORMATION::default();
+    let status = unsafe {
+        NtQueryInformationProcess(
+            handle.raw(),
+            ProcessBasicInformation,
+            (&mut basic as *mut PROCESS_BASIC_INFORMATION).cast(),
+            size_of::<PROCESS_BASIC_INFORMATION>() as u32,
+            std::ptr::null_mut(),
+        )
+    };
+    if !status.is_ok() {
+        bail!("NtQueryInformationProcess failed with {status:?}");
+    }
+    let peb = basic.PebBaseAddress;
+    if peb.is_null() {
+        bail!("process exposes no PEB");
+    }
+    let peb_value = read_remote_struct::<PEB>(&handle, peb as usize)?;
+    if peb_value.ProcessParameters.is_null() {
+        bail!("process exposes no process parameters");
+    }
+    let parameters = read_remote_struct::<RTL_USER_PROCESS_PARAMETERS>(
+        &handle,
+        peb_value.ProcessParameters as usize,
+    )?;
+    let command_line = parameters.CommandLine;
+    if command_line.Buffer.is_null() || command_line.Length == 0 {
+        bail!("process exposes an empty command line");
+    }
+    let length = command_line.Length as usize;
+    let mut wide = vec![0u16; length / 2 + 1];
+    let mut bytes_read = 0usize;
+    unsafe {
+        ReadProcessMemory(
+            handle.raw(),
+            command_line.Buffer.0 as *const c_void,
+            wide.as_mut_ptr().cast(),
+            length,
+            Some(&mut bytes_read),
+        )?
+    };
+    if bytes_read != length {
+        bail!("short command-line read at {bytes_read}/{length} bytes");
+    }
+    Ok(String::from_utf16_lossy(&wide[..length / 2]))
+}
+
+fn read_remote_struct<T: Default + Copy>(process: &OwnedHandle, address: usize) -> Result<T> {
+    let mut value = T::default();
+    let mut bytes_read = 0usize;
+    unsafe {
+        ReadProcessMemory(
+            process.raw(),
+            address as *const c_void,
+            (&mut value as *mut T).cast(),
+            size_of::<T>(),
+            Some(&mut bytes_read),
+        )?
+    };
+    if bytes_read != size_of::<T>() {
+        bail!("short remote read at 0x{address:x}");
+    }
+    Ok(value)
 }
 
 pub fn wait_for_coe5(pid: u32, timeout: Duration) -> Result<ProcessInfo> {

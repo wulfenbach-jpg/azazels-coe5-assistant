@@ -40,6 +40,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
 tray-icon = { version = "0.24.2", default-features = false, features = ["common-controls-v6"] }
 uuid = { version = "1.21.0", features = ["serde", "v4"] }
 windows = { version = "0.62.2", features = [
+    "Wdk_System_Threading",
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
     "Win32_Security",
