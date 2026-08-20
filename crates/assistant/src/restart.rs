@@ -9,7 +9,7 @@ use anyhow::{Result, bail};
 use azazel_coe5_protocol::GameSnapshot;
 use windows::Win32::{
     Foundation::{POINT, RECT},
-    Graphics::Gdi::{ClientToScreen, InvalidateRect},
+    Graphics::Gdi::ClientToScreen,
     System::{
         Diagnostics::Debug::WriteProcessMemory,
         Threading::{
@@ -24,7 +24,8 @@ use windows::Win32::{
             VK_RETURN,
         },
         WindowsAndMessaging::{
-            FindWindowW, GetClientRect, GetWindowThreadProcessId, SetForegroundWindow,
+            FindWindowW, GetClientRect, GetWindowRect, GetWindowThreadProcessId,
+            SetForegroundWindow, SetWindowPos, SWP_NOACTIVATE, SWP_NOOWNERZORDER, SWP_NOZORDER,
         },
     },
 };
@@ -402,12 +403,19 @@ fn apply_participant_setup(process: &ProcessInfo, plan: &RestartPlan) -> Result<
         )
     }?);
     let deadline = Instant::now() + Duration::from_secs(20);
-    while Instant::now() < deadline {
-        let controller: i16 = read_remote(&handle, process.module_base + PARTICIPANT_CONTROLLERS)?;
-        if controller == 0 {
-            break;
+    loop {
+        match read_remote::<i16>(&handle, process.module_base + PARTICIPANT_CONTROLLERS) {
+            Ok(0) => break,
+            // The fresh process may still be mapping its image while the
+            // loader runs; a failed read (ERROR_PARTIAL_COPY) means "not
+            // ready yet", not a fatal restart error.
+            Ok(_) | Err(_) => {
+                if Instant::now() >= deadline {
+                    bail!("game did not reach the setup screen in time");
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
         }
-        std::thread::sleep(Duration::from_millis(50));
     }
 
     for slot in 0..32usize {
@@ -454,8 +462,10 @@ fn apply_participant_setup(process: &ProcessInfo, plan: &RestartPlan) -> Result<
 
 /// Forces the game window to repaint after the participant table was written
 /// into memory. The setup screen is event-driven and draws only when the
-/// game decides to; the roster would otherwise stay invisible until some
-/// window event (like a maximize/restore) happens to trigger a redraw.
+/// game's event loop notices a change; `WM_PAINT`/expose events are ignored
+/// (a plain `InvalidateRect` did not redraw it). Maximize/restore works
+/// because the game redraws on `SDL_WINDOWEVENT_SIZE_CHANGED`, so we replay
+/// that trigger with an imperceptible one-pixel resize and restore.
 fn invalidate_game_window(process: &ProcessInfo) -> Result<()> {
     let window = unsafe { FindWindowW(PCWSTR::null(), w!("CoE 5")) }?;
     let mut pid = 0u32;
@@ -463,7 +473,30 @@ fn invalidate_game_window(process: &ProcessInfo) -> Result<()> {
     if pid != process.pid {
         return Ok(());
     }
-    unsafe { InvalidateRect(Some(window), None, true) }.ok()?;
+    let mut rect = RECT::default();
+    unsafe { GetWindowRect(window, &mut rect) }?;
+    let width = rect.right - rect.left;
+    let height = rect.bottom - rect.top;
+    unsafe {
+        SetWindowPos(
+            window,
+            None,
+            rect.left,
+            rect.top,
+            width + 1,
+            height,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER,
+        )?;
+        SetWindowPos(
+            window,
+            None,
+            rect.left,
+            rect.top,
+            width,
+            height,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER,
+        )?;
+    }
     Ok(())
 }
 
@@ -490,12 +523,16 @@ fn activate_setup_ok(process: &ProcessInfo) -> Result<()> {
         )
     }?);
     let deadline = Instant::now() + Duration::from_secs(20);
-    while Instant::now() < deadline {
-        let controller: i16 = read_remote(&handle, process.module_base + PARTICIPANT_CONTROLLERS)?;
-        if controller == 0 {
-            break;
+    loop {
+        match read_remote::<i16>(&handle, process.module_base + PARTICIPANT_CONTROLLERS) {
+            Ok(0) => break,
+            Ok(_) | Err(_) => {
+                if Instant::now() >= deadline {
+                    bail!("game did not reach the setup screen in time");
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
         }
-        std::thread::sleep(Duration::from_millis(100));
     }
 
     // Dismiss any initial prompt and confirm the participant table.
@@ -536,14 +573,19 @@ fn wait_for_world_creation(process: &ProcessInfo, timeout: Duration) -> Result<(
         )
     }?);
     let deadline = Instant::now() + timeout;
-    while Instant::now() < deadline {
-        let start_x: i16 = read_remote(&handle, process.module_base + PARTICIPANT_START_X)?;
-        if start_x >= 0 {
-            return Ok(());
+    loop {
+        match read_remote::<i16>(&handle, process.module_base + PARTICIPANT_START_X) {
+            Ok(start_x) if start_x >= 0 => return Ok(()),
+            // Transient partial-copy reads while the game is mid-transition
+            // are not fatal; only a quiet deadline is.
+            Ok(_) | Err(_) => {
+                if Instant::now() >= deadline {
+                    bail!("world creation did not produce a human start coordinate");
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
         }
-        std::thread::sleep(Duration::from_millis(100));
     }
-    bail!("world creation did not produce a human start coordinate")
 }
 
 fn read_remote<T: Copy>(process: &OwnedHandle, address: usize) -> Result<T> {

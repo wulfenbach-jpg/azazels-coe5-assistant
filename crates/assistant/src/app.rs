@@ -487,11 +487,28 @@ impl AssistantTabs<'_> {
                 },
             ));
         }
+        ui.separator();
+        ui.label("Restart settings source");
+        let source = &mut self.config.restart_settings_source;
+        let copy_live = ui.selectable_value(
+            source,
+            SettingsSource::CopyLastGame,
+            "Copy last played game settings",
+        );
+        let use_profile = ui.selectable_value(
+            source,
+            SettingsSource::UseProfile,
+            "Use set profile settings",
+        );
+        if (copy_live.changed() || use_profile.changed())
+            && let Err(error) = self.config.save()
+        {
+            *self.last_error = Some(error.to_string());
+        }
         for difference in self.runtime.profile_differences(self.config) {
             ui.horizontal(|ui| {
                 ui.colored_label(theme::BRASS, difference.field);
-                ui.monospace(difference.profile);
-                ui.label("→");
+                ui.monospace(difference.profile);                ui.label("→");
                 ui.monospace(difference.live);
             });
         }
@@ -499,15 +516,14 @@ impl AssistantTabs<'_> {
 
     fn profiles(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            for profile in &self.config.profiles {
-                if ui
-                    .selectable_label(
-                        self.config.active_profile == Some(profile.id),
-                        &profile.name,
-                    )
-                    .clicked()
-                {
+            let mut delete = None;
+            for (index, profile) in self.config.profiles.iter().enumerate() {
+                let selected = self.config.active_profile == Some(profile.id);
+                if ui.selectable_label(selected, &profile.name).clicked() {
                     self.config.active_profile = Some(profile.id);
+                }
+                if self.config.profiles.len() > 1 && ui.small_button("×").on_hover_text("Delete profile").clicked() {
+                    delete = Some(index);
                 }
             }
             if ui.button("+").clicked() {
@@ -522,6 +538,16 @@ impl AssistantTabs<'_> {
                 self.config.profiles.push(profile);
             }
             ui.checkbox(&mut self.config.profile_lock, "Lock");
+            if let Some(index) = delete {
+                let removed = self.config.profiles.remove(index);
+                if self.config.active_profile == Some(removed.id) {
+                    self.config.active_profile =
+                        self.config.profiles.first().map(|profile| profile.id);
+                }
+                if let Err(error) = self.config.save() {
+                    *self.last_error = Some(error.to_string());
+                }
+            }
         });
         ui.separator();
         let Some(profile) = self.config.active_profile_mut() else {
@@ -594,24 +620,6 @@ impl AssistantTabs<'_> {
                 *self.rebind_hotkey = true;
             }
         });
-        ui.separator();
-        ui.label("Restart settings source");
-        let source = &mut self.config.restart_settings_source;
-        let copy_live = ui.selectable_value(
-            source,
-            SettingsSource::CopyLastGame,
-            "Copy last played game settings",
-        );
-        let use_profile = ui.selectable_value(
-            source,
-            SettingsSource::UseProfile,
-            "Use set profile settings",
-        );
-        if (copy_live.changed() || use_profile.changed())
-            && let Err(error) = self.config.save()
-        {
-            *self.last_error = Some(error.to_string());
-        }
         ui.separator();
         let mut remove = None;
         for (index, rule) in self.config.remaps.iter_mut().enumerate() {
