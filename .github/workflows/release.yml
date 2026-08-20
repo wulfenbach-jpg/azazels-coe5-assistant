@@ -53,9 +53,14 @@ jobs:
         run: cargo build --release -p azazel-coe5-update-signer
 
       - name: Sign update manifest
-        if: ${{ secrets.UPDATE_SIGNING_KEY != '' }}
         shell: pwsh
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: |
+          if ([string]::IsNullOrEmpty($env:UPDATE_SIGNING_KEY)) {
+            Write-Host "UPDATE_SIGNING_KEY secret not set; skipping update manifest"
+            exit 0
+          }
           $zip = "azazel-coe5-assistant-$env:GITHUB_REF_NAME-windows-portable.zip"
           $json = [ordered]@{
             version = $env:GITHUB_REF_NAME.TrimStart('v')
@@ -70,7 +75,7 @@ jobs:
           }
           $json | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 unsigned.json
           & .\target\release\azazel-coe5-update-signer.exe `
-            "${{ secrets.UPDATE_SIGNING_KEY }}" unsigned.json update.json
+            $env:UPDATE_SIGNING_KEY unsigned.json update.json
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
