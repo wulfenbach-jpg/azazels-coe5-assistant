@@ -130,7 +130,15 @@ pub struct AssistantApp {
     update_artifact_path: String,
     update_result: String,
     debugger: DebugUi,
+    key_capture: Option<KeyCapture>,
     last_error: Option<String>,
+}
+
+/// Which remap key field is awaiting a pressed key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct KeyCapture {
+    remap_index: usize,
+    action: bool,
 }
 
 impl AssistantApp {
@@ -181,6 +189,7 @@ impl AssistantApp {
             update_artifact_path: String::new(),
             update_result: String::new(),
             debugger: DebugUi::default(),
+            key_capture: None,
             last_error: None,
         })
     }
@@ -318,6 +327,7 @@ impl eframe::App for AssistantApp {
                     debugger: &mut self.debugger,
                     hotkey_text: &mut self.hotkey_text,
                     rebind_hotkey: &mut rebind,
+                    key_capture: &mut self.key_capture,
                     last_error: &mut self.last_error,
                 };
                 #[cfg(debug_assertions)]
@@ -372,6 +382,7 @@ struct AssistantTabs<'a> {
     debugger: &'a mut DebugUi,
     hotkey_text: &'a mut String,
     rebind_hotkey: &'a mut bool,
+    key_capture: &'a mut Option<KeyCapture>,
     last_error: &'a mut Option<String>,
 }
 
@@ -654,6 +665,7 @@ impl AssistantTabs<'_> {
         });
         ui.separator();
         let mut remove = None;
+        self.poll_key_capture(ui);
         for (index, rule) in self.config.remaps.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut rule.enabled, "");
@@ -665,7 +677,7 @@ impl AssistantTabs<'_> {
                         shift,
                     } => {
                         ui.label("Key");
-                        ui.add(egui::DragValue::new(virtual_key));
+                        Self::key_picker(ui, self.key_capture, index, false, virtual_key);
                         ui.checkbox(control, "Ctrl");
                         ui.checkbox(alt, "Alt");
                         ui.checkbox(shift, "Shift");
@@ -691,7 +703,10 @@ impl AssistantTabs<'_> {
                     }
                 }
                 ui.label(crate::icons::CHEVRON_RIGHT);
-                ui.add(egui::DragValue::new(&mut rule.action.virtual_key));
+                Self::key_picker(ui, self.key_capture, index, true, &mut rule.action.virtual_key);
+                ui.checkbox(&mut rule.action.control, "Ctrl");
+                ui.checkbox(&mut rule.action.alt, "Alt");
+                ui.checkbox(&mut rule.action.shift, "Shift");
                 if ui
                     .small_button(crate::icons::DELETE)
                     .on_hover_text("Remove remap")
@@ -741,6 +756,70 @@ impl AssistantTabs<'_> {
                 self.runtime.update_remaps(self.config);
                 if let Err(error) = self.config.save() {
                     *self.last_error = Some(error.to_string());
+                }
+            }
+        });
+    }
+
+    /// Waits for the next pressed key while a field is armed for capture and
+    /// writes it into the matching remap field.
+    fn poll_key_capture(&mut self, ui: &mut egui::Ui) {
+        let Some(capture) = *self.key_capture else {
+            return;
+        };
+        let mut captured = None;
+        ui.input(|input| {
+            for event in &input.events {
+                if let egui::Event::Key {
+                    key,
+                    pressed: true,
+                    ..
+                } = event
+                {
+                    captured = egui_key_to_vk(*key);
+                    break;
+                }
+            }
+        });
+        let Some(vk) = captured else {
+            return;
+        };
+        if let Some(rule) = self.config.remaps.get_mut(capture.remap_index) {
+            if capture.action {
+                rule.action.virtual_key = vk;
+            } else if let InputTrigger::Keyboard { virtual_key, .. } = &mut rule.trigger {
+                *virtual_key = vk;
+            }
+        }
+        *self.key_capture = None;
+    }
+
+    /// A named key button (click to capture the next pressed key) with a
+    /// dropdown of the common keys as the mouse-only alternative.
+    fn key_picker(
+        ui: &mut egui::Ui,
+        key_capture: &mut Option<KeyCapture>,
+        index: usize,
+        action: bool,
+        virtual_key: &mut u16,
+    ) {
+        let capture = KeyCapture {
+            remap_index: index,
+            action,
+        };
+        let capturing = *key_capture == Some(capture);
+        let text = if capturing {
+            format!("{} Press a key…", crate::icons::KEYBOARD)
+        } else {
+            crate::config::key_name(*virtual_key)
+        };
+        if ui.add(egui::Button::new(text).selected(capturing)).clicked() {
+            *key_capture = if capturing { None } else { Some(capture) };
+        }
+        ui.menu_button(crate::icons::CHEVRON_DOWN, |ui| {
+            for (code, name) in crate::config::common_keys() {
+                if ui.selectable_label(*virtual_key == code, name).clicked() {
+                    *virtual_key = code;
                 }
             }
         });
@@ -1149,6 +1228,103 @@ fn connection_label(state: &ConnectionState) -> String {
 
 fn short_hash(hash: &str) -> String {
     hash.chars().take(12).collect()
+}
+
+/// Maps an egui [`egui::Key`] back to its Windows virtual-key code so a
+/// captured key press can be stored in a remap rule. Modifier-only keys and
+/// action keys (copy/paste/browser) are not capturable; the dropdown offers
+/// them instead.
+fn egui_key_to_vk(key: egui::Key) -> Option<u16> {
+    use egui::Key::*;
+    Some(match key {
+        ArrowDown => 0x28,
+        ArrowLeft => 0x25,
+        ArrowRight => 0x27,
+        ArrowUp => 0x26,
+        Escape => 0x1b,
+        Tab => 0x09,
+        Backspace => 0x08,
+        Enter => 0x0d,
+        Space => 0x20,
+        Insert => 0x2d,
+        Delete => 0x2e,
+        Home => 0x24,
+        End => 0x23,
+        PageUp => 0x21,
+        PageDown => 0x22,
+        Minus => 0xbd,
+        Period => 0xbe,
+        Plus | Equals => 0xbb,
+        Semicolon | Colon => 0xba,
+        Quote => 0xde,
+        Comma => 0xbc,
+        Slash => 0xbf,
+        Backslash | Pipe => 0xdc,
+        Backtick => 0xc0,
+        OpenBracket => 0xdb,
+        CloseBracket => 0xdd,
+        Num0 => 0x30,
+        Num1 => 0x31,
+        Num2 => 0x32,
+        Num3 => 0x33,
+        Num4 => 0x34,
+        Num5 => 0x35,
+        Num6 => 0x36,
+        Num7 => 0x37,
+        Num8 => 0x38,
+        Num9 => 0x39,
+        A => 0x41,
+        B => 0x42,
+        C => 0x43,
+        D => 0x44,
+        E => 0x45,
+        F => 0x46,
+        G => 0x47,
+        H => 0x48,
+        I => 0x49,
+        J => 0x4a,
+        K => 0x4b,
+        L => 0x4c,
+        M => 0x4d,
+        N => 0x4e,
+        O => 0x4f,
+        P => 0x50,
+        Q => 0x51,
+        R => 0x52,
+        S => 0x53,
+        T => 0x54,
+        U => 0x55,
+        V => 0x56,
+        W => 0x57,
+        X => 0x58,
+        Y => 0x59,
+        Z => 0x5a,
+        F1 => 0x70,
+        F2 => 0x71,
+        F3 => 0x72,
+        F4 => 0x73,
+        F5 => 0x74,
+        F6 => 0x75,
+        F7 => 0x76,
+        F8 => 0x77,
+        F9 => 0x78,
+        F10 => 0x79,
+        F11 => 0x7a,
+        F12 => 0x7b,
+        F13 => 0x7c,
+        F14 => 0x7d,
+        F15 => 0x7e,
+        F16 => 0x7f,
+        F17 => 0x80,
+        F18 => 0x81,
+        F19 => 0x82,
+        F20 => 0x83,
+        F21 => 0x84,
+        F22 => 0x85,
+        F23 => 0x86,
+        F24 => 0x87,
+        _ => return None,
+    })
 }
 
 fn capability_symbol(capability: &str) -> &'static str {

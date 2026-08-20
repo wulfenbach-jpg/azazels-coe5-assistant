@@ -26,6 +26,7 @@ pub const CAMERA: &str = "\u{E722}"; // Camera — snapshot
 pub const REPLAY: &str = "\u{EF3B}"; // Replay — restart
 pub const DELETE: &str = "\u{E74D}"; // Delete (trash) — remove buttons
 pub const CHEVRON_RIGHT: &str = "\u{E76C}"; // ChevronRight — mapping arrows
+pub const CHEVRON_DOWN: &str = "\u{E70D}"; // ChevronDown — picker menus
 pub const CHECK_MARK: &str = "\u{E73E}"; // CheckMark — completed result
 pub const ERROR: &str = "\u{E783}"; // Error — degraded connection
 

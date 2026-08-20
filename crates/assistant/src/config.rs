@@ -327,6 +327,144 @@ pub enum MouseButton {
     X2,
 }
 
+/// Human-readable name for a Windows virtual-key code. Unknown codes fall
+/// back to the numeric value so nothing is ever hidden.
+pub fn key_name(virtual_key: u16) -> String {
+    let name = match virtual_key {
+        0x08 => "Backspace",
+        0x09 => "Tab",
+        0x0d => "Enter",
+        0x10 | 0xa0 | 0xa1 => "Shift",
+        0x11 | 0xa2 | 0xa3 => "Ctrl",
+        0x12 | 0xa4 | 0xa5 => "Alt",
+        0x13 => "Pause",
+        0x14 => "Caps Lock",
+        0x1b => "Esc",
+        0x20 => "Space",
+        0x21 => "Page Up",
+        0x22 => "Page Down",
+        0x23 => "End",
+        0x24 => "Home",
+        0x25 => "Left",
+        0x26 => "Up",
+        0x27 => "Right",
+        0x28 => "Down",
+        0x2c => "Print Screen",
+        0x2d => "Insert",
+        0x2e => "Delete",
+        0x5b => "Win",
+        0x60..=0x69 => return format!("Numpad {}", virtual_key - 0x60),
+        0x6a => "Numpad *",
+        0x6b => "Numpad +",
+        0x6d => "Numpad -",
+        0x6e => "Numpad .",
+        0x6f => "Numpad /",
+        0x70..=0x87 => return format!("F{}", virtual_key - 0x70 + 1),
+        0x90 => "Num Lock",
+        0x91 => "Scroll Lock",
+        0xba => "Semicolon",
+        0xbb => "Equals",
+        0xbc => "Comma",
+        0xbd => "Minus",
+        0xbe => "Period",
+        0xbf => "Slash",
+        0xc0 => "Backtick",
+        0xdb => "Left Bracket",
+        0xdc => "Backslash",
+        0xdd => "Right Bracket",
+        0xde => "Quote",
+        0x30..=0x39 => return (((virtual_key - 0x30) as u8 + b'0') as char).into(),
+        0x41..=0x5a => return (((virtual_key - 0x41) as u8 + b'A') as char).into(),
+        _ => return virtual_key.to_string(),
+    };
+    name.to_string()
+}
+
+/// The common keys offered in the picker dropdown, ordered for scanning.
+pub fn common_keys() -> Vec<(u16, &'static str)> {
+    let mut keys = vec![
+        (0x41, "A"),
+        (0x42, "B"),
+        (0x43, "C"),
+        (0x44, "D"),
+        (0x45, "E"),
+        (0x46, "F"),
+        (0x47, "G"),
+        (0x48, "H"),
+        (0x49, "I"),
+        (0x4a, "J"),
+        (0x4b, "K"),
+        (0x4c, "L"),
+        (0x4d, "M"),
+        (0x4e, "N"),
+        (0x4f, "O"),
+        (0x50, "P"),
+        (0x51, "Q"),
+        (0x52, "R"),
+        (0x53, "S"),
+        (0x54, "T"),
+        (0x55, "U"),
+        (0x56, "V"),
+        (0x57, "W"),
+        (0x58, "X"),
+        (0x59, "Y"),
+        (0x5a, "Z"),
+        (0x30, "0"),
+        (0x31, "1"),
+        (0x32, "2"),
+        (0x33, "3"),
+        (0x34, "4"),
+        (0x35, "5"),
+        (0x36, "6"),
+        (0x37, "7"),
+        (0x38, "8"),
+        (0x39, "9"),
+        (0x70, "F1"),
+        (0x71, "F2"),
+        (0x72, "F3"),
+        (0x73, "F4"),
+        (0x74, "F5"),
+        (0x75, "F6"),
+        (0x76, "F7"),
+        (0x77, "F8"),
+        (0x78, "F9"),
+        (0x79, "F10"),
+        (0x7a, "F11"),
+        (0x7b, "F12"),
+        (0x1b, "Esc"),
+        (0x09, "Tab"),
+        (0x0d, "Enter"),
+        (0x20, "Space"),
+        (0x08, "Backspace"),
+        (0x2e, "Delete"),
+        (0x2d, "Insert"),
+        (0x24, "Home"),
+        (0x23, "End"),
+        (0x21, "Page Up"),
+        (0x22, "Page Down"),
+        (0x25, "Left"),
+        (0x26, "Up"),
+        (0x27, "Right"),
+        (0x28, "Down"),
+        (0x10, "Shift"),
+        (0x11, "Ctrl"),
+        (0x12, "Alt"),
+        (0xba, "Semicolon"),
+        (0xbb, "Equals"),
+        (0xbc, "Comma"),
+        (0xbd, "Minus"),
+        (0xbe, "Period"),
+        (0xbf, "Slash"),
+        (0xc0, "Backtick"),
+        (0xdb, "Left Bracket"),
+        (0xdc, "Backslash"),
+        (0xdd, "Right Bracket"),
+        (0xde, "Quote"),
+    ];
+    keys.dedup_by_key(|(code, _)| *code);
+    keys
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateConfig {
     pub endpoint: String,
@@ -448,4 +586,30 @@ mod tests {
         config.profiles.push(duplicate);
         assert_eq!(config.auto_select(&snapshot), None);
     }
+    #[test]
+    fn key_names_cover_common_codes() {
+        assert_eq!(key_name(0x51), "Q");
+        assert_eq!(key_name(0x38), "8");
+        assert_eq!(key_name(0x72), "F3");
+        assert_eq!(key_name(0x20), "Space");
+        assert_eq!(key_name(0x1b), "Esc");
+        assert_eq!(key_name(0x0d), "Enter");
+        assert_eq!(key_name(0x25), "Left");
+        assert_eq!(key_name(0x7d), "F14");
+        assert_eq!(key_name(0x61), "Numpad 1");
+        assert_eq!(key_name(0x99), "153");
+    }
+
+    #[test]
+    fn common_keys_are_unique() {
+        let keys = common_keys();
+        let mut codes = keys.iter().map(|(code, _)| *code).collect::<Vec<_>>();
+        codes.sort_unstable();
+        codes.dedup();
+        assert_eq!(codes.len(), keys.len(), "duplicate codes in picker list");
+        assert!(codes.contains(&0x51), "letter keys present");
+        assert!(codes.contains(&0x1b), "esc present");
+    }
+
 }
+
